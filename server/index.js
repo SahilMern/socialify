@@ -4,7 +4,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import connectDb from "./database/dbconfig.js"; //TODO:- Database Routes
-import cookieParser from "cookie-parser"
+import cookieParser from "cookie-parser";
 dotenv.config();
 
 const app = express();
@@ -18,9 +18,8 @@ app.use(cookieParser());
 app.get("/", (req, res) => res.send("Hello World!"));
 
 //? UserRoutes
-import UserRoutes from "./Routes/user.Routes.js"
-app.use("/api/v1", UserRoutes)
-
+import UserRoutes from "./Routes/user.Routes.js";
+app.use("/api/v1", UserRoutes);
 
 app.listen(port, () => {
   connectDb();

@@ -92,7 +92,7 @@ export const login = async (req, res) => {
       expiresIn: "1h",
     });
     return res
-      .cookie("cookie", token, {
+      .cookie("token", token, {
         httpOnly: true,
         secure: true,
         sameSite: true,
@@ -115,7 +115,7 @@ export const login = async (req, res) => {
 // User Logout
 export const logout = async (req, res) => {
   try {
-    return res.cookie("cookie", "", { maxAge: 0 }).json({
+    return res.cookie("token", "", { maxAge: 0 }).json({
       message: "User logged out successfully",
       success: true,
     });
@@ -133,7 +133,7 @@ export const getProfile = async (req, res) => {
   try {
     const userId = req.params.id;
     console.log(userId);
-    const user = await User.findById(userId); // Changed to findById
+    const user = await User.findById(userId).select("-password"); // Changed to findById
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -156,10 +156,11 @@ export const getProfile = async (req, res) => {
 // Edit Profile
 export const editProfile = async (req, res) => {
   try {
-    const userId = req.user.id; // Ensure this retrieves the correct user ID
+    const userId = req.id; // Ensure this retrieves the correct user ID
     const { bio, gender } = req.body;
     const profilePicture = req.file;
-
+    console.log(userId, profilePicture);
+    
     let cloudResponse;
     if (profilePicture) {
       const fileUri = getDataUri(profilePicture);
@@ -167,6 +168,9 @@ export const editProfile = async (req, res) => {
     }
 
     const user = await User.findById(userId);
+    console.log(user, "user");
+    
+
     if (!user) {
       return res.status(404).json({
         message: "User not found",
@@ -180,7 +184,6 @@ export const editProfile = async (req, res) => {
 
     await user.save();
     return res.status(200).json({
-      // Changed to 200 for updates
       message: "Profile updated successfully",
       success: true,
       user,
@@ -194,21 +197,84 @@ export const editProfile = async (req, res) => {
   }
 };
 
-
-export const getSuggestedUsers = async(req, res) =>{
+export const getSuggestedUsers = async (req, res) => {
   try {
     const getSuggestedUsers = await User.find({
-      _id:{
-        $ne:req.id
-      }
-    }).select("-password")
+      _id: {
+        $ne: req.id,
+      },
+    }).select("-password");
     return res.status(200).json({
       success: true,
       message: "Get suggested user",
-      getSuggestedUsers
+      getSuggestedUsers,
     });
   } catch (error) {
     console.log(error, "error");
-    
   }
-}
+};
+
+export const followOrunfollow = async (req, res) => {
+  try {
+    const followkarnewala = req.id;
+    const jiskofollowkarunga = req.params.id;
+    
+    console.log(followkarnewala, jiskofollowkarunga);
+    
+    if (followOrunfollow === jiskofollowkarunga) {
+      return res.status(400).json({
+        message: "User not follow same account",
+        success: false,
+      });
+    }
+    console.log("hey");
+    
+    const user = await User.findById(followkarnewala);
+    const targetUser = await User.findById(jiskofollowkarunga);
+
+    if (!user || !targetUser) {
+      return res.status(400).json({
+        message: "User not found",
+        success: false,
+      });
+    }
+
+    //Now to check follow or unfollow to user
+    const isFollowing = user.following.includes(jiskofollowkarunga);
+    console.log(isFollowing, "isfollowing");
+    
+    if (isFollowing) {
+      await Promise.all([
+        User.updateOne(
+          { _id: followkarnewala },
+          { $pull: { following: jiskofollowkarunga } }
+        ),
+        User.updateOne(
+          { _id: jiskofollowkarunga },
+          { $pull: { followers: followkarnewala } }
+        ),
+      ]);
+      return res.status(200).json({
+        message: "Unfollwed sucessfully",
+        success: true,
+      });
+    } else {
+      await Promise.all([
+        User.updateOne(
+          { _id: followkarnewala },
+          { $push: { following: jiskofollowkarunga } }
+        ),
+        User.updateOne(
+          { _id: jiskofollowkarunga },
+          { $push: { followers: followkarnewala } }
+        ),
+      ]);
+      return res.status(200).json({
+        message: "Following sucessfully",
+        success: true,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
