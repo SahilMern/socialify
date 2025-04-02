@@ -76,7 +76,19 @@ export const login = async (req, res) => {
         message: "Invalid credentials",
       });
     }
+    const token = jwt.sign({ userId: user._id }, jwtSecret, {
+      expiresIn: "1h",
+    });
 
+    const populatePost = await Promise.all(
+      user.posts.map(async(postId) => {
+        const post = await Post.findById(postId)
+        if(post.author.equals(user._id)){
+          return post
+        }
+        return null
+      })
+    )
     const userResponse = {
       username: user.username,
       email: user.email,
@@ -85,12 +97,9 @@ export const login = async (req, res) => {
       gender: user.gender,
       followers: user.followers,
       following: user.following,
-      posts: user.posts,
+      posts: populatePost,
     };
 
-    const token = jwt.sign({ userId: user._id }, jwtSecret, {
-      expiresIn: "1h",
-    });
     return res
       .cookie("token", token, {
         httpOnly: true,

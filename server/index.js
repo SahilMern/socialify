@@ -18,8 +18,15 @@ app.use(cookieParser());
 app.get("/", (req, res) => res.send("Hello World!"));
 
 //? UserRoutes
-import UserRoutes from "./Routes/user.Routes.js";
-app.use("/api/v1", UserRoutes);
+import userRoutes from "./Routes/user.Routes.js";
+import postRoutes from "./Routes/post.routes.js";
+import messageRoutes from "./Routes/message.routes.js"
+
+app.use("/api/v1", userRoutes);
+app.use("/api/v1/post", postRoutes);
+app.use("/api/v1/message", messageRoutes);
+
+
 
 app.listen(port, () => {
   connectDb();
